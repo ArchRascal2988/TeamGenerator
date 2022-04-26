@@ -10,7 +10,7 @@ const landing={
     type: "list",
     message: "Welcome to the Team Generator. Pick either a manager, engineer, or intern to add to the dashboard.",
     name: "land",
-    choices: "[Manager, Engineer, Intern]"
+    choices: ["Manager", "Engineer", "Intern"]
 }
 
 const cont={
@@ -88,51 +88,112 @@ const iQ=[
 function generateHTML(){
     console.log(team);
     let cArr=[]
+    let cardTemp;
     for(const employee of team){
-        //push template literal into cArr
+        if(employee.getRole()==="Manager"){
+            cardTemp=`
+            <div class="card employee col-3">
+            <div class="card-header">
+                <h2 class="card-title">${employee.name}</h2>
+                <h3 class="card-title"><i class="fa-solid fa-mug-hot"></i> Manager </h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item">Id: ${employee.id}</li>
+                    <li class="list-group-item"><a href="${employee.email}">Email: ${employee.email}</a></li>
+                    <li class="list-group-item">Office:  ${employee.officeNo}</li>
+                </ul>
+            </div>
+          </div>`;
+        }
+        else if(employee.getRole()==="Engineer"){
+            cardTemp=`
+            <div class="card employee col-3">
+            <div class="card-header">
+                <h2 class="card-title">${employee.name}</h2>
+                <h3 class="card-title"><i class="fa-solid fa-glasses"></i> Engineer </h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item">Id: ${employee.id}</li>
+                    <li class="list-group-item"><a href="${employee.email}">Email: ${employee.email}</a></li>
+                    <li class="list-group-item"><a href="https://github.com/${employee.username}">Github: ${employee.username}</a></li>
+                </ul>
+            </div>
+          </div>`;
+        }
+        else{
+            cardTemp=`
+            <div class="card employee col-3">
+            <div class="card-header">
+                <h2 class="card-title">${employee.name}</h2>
+                <h3 class="card-title"><i class="fa-solid fa-user-graduate"></i> Manager </h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item">Id: ${employee.id}</li>
+                    <li class="list-group-item"><a href="${employee.email}">Email: ${employee.email}</a></li>
+                    <li class="list-group-item">School: ${employee.school}</li>
+                </ul>
+            </div>
+          </div>`;
+        }
+        cArr.push(cardTemp);
     }
-    let temp= ""; //will be all of html, stopping when the div for the cards is opened
+    let temp=`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" href="./style.css">
+    <title>Team Generator</title>
+</head>
+<body>
+    <header class="jumbotron jumbotron-fluid">
+        <h1>Team Generator</h1>
+    </header>
+    <main class="container container-fluid row">`; 
     for(const card of cArr){
-        //add card to temp
+        temp+=card;
     }
-    temp+= ""; //close html template literal
-    //fs.writeFile("myTeam.html", temp, (err) =>{
-    //  if(err) console.err(err);
-    //  else console.log(All finished! Check the dist folder for your html)
-    // })
+    temp+=`
+    </main>
+</body>
+</html>`;
+    fs.writeFile("./dist/myTeam.html", temp, (err) =>{
+     if(err) console.err(err);
+     else console.log("All finished! Check the dist folder for your html")
+    })
 }
 
-function init(){
-    inq.prompt(landing).then((res)=>{
-        switch(res.land){
-            case 'Manager':
-                inq.prompt(mQ).then((res)=>{
-                    team.push(new Manager(res.name, res.email, res.id, res.office))
-                    }).then(inq.prompt(cont)).then((res)=>{
-                        if(res) init();
-                        else generateHTML();
-                    }).catch(err).then(()=> console.error(err));
-                break;
-            
-            case 'Engineer':
-                inq.prompt(eQ).then((res)=>{
-                    team.push(new Engineer(res.name, res.email, res.id, res.github))
-                    }).then(inq.prompt(cont)).then((res)=>{
-                        if(res) init();
-                        else generateHTML();                    
-                    }).catch(err).then(()=> console.error(err));
-                break;
-            
-            case 'Intern':
-                inq.prompt(iQ).then((res)=>{
-                    team.push(new Intern(res.name, res.email, res.id, res.school))
-                    }).then(inq.prompt(cont)).then((res)=>{
-                        if(res) init();
-                        else generateHTML();                    
-                }).catch(err).then(()=> console.error(err));
-                break;
-        }
-    }).catch(err).then(()=> console.error(err));
+async function init(){
+    let obj= await inq.prompt(landing)
+    .then((res)=> {return gatherData(res.land)});
+    team.push(obj);
+    addAnother();
 }
+
+async function gatherData(type){
+    switch(type){
+        case "Manager":
+            return await inq.prompt(mQ).then((res)=> {return new Manager(res.name, res.email, res.id, res.office)});
+        case "Engineer":
+            return await inq.prompt(eQ).then((res)=> {return new Engineer(res.name, res.email, res.id, res.github)});
+        case "Intern":
+            return await inq.prompt(iQ).then((res)=> {return new Intern(res.name, res.email, res.id, res.school)});
+    }
+}
+
+function addAnother(){
+    inq.prompt(cont).then((res)=>{
+        if(res.continue==false) generateHTML();
+        else init();
+    })
+}
+
 
 init();
